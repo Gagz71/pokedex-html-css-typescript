@@ -1,0 +1,162 @@
+//////////////////////////////////////////////////////TYPESCRIPT///////////////////////////////////////////////////////////
+
+*Langage de P.O.O. développé et maintenu par Microsoft.
+*Sur-ensemble de JS => tout code JS valide s'éxécutera également comme prévu dans TS.
+*Doit être compilé en JS -> compilateur nécessaire pour récupérer le code JS.
+*Langage statique = affectation d'un type à une variable lors de sa délcaration ;
+    => JS = langage typé dynamiquement -> ne connait pas le type de données d'une variable jusqu'à ce qu'il affecte une valeur à cette variable, au moment de l'exécution.
+=> permet de générer erreurs au moment de la compilation si variable non utilisée ou  réaffectée avec un type différent;
+    => erreur n'empêche pas exécution du code => code JS sera tjrs généré.
+*Typage statique facultatif dans TS => si aucun type défini mais que variable a valeur -> valeur deviendra le type;
+                                                                    => si variable pas de valeur -> type par défaut = any;
+
+
+ ////////////////CONFIGURATION/////////////////
+
+=> installation TS => 'npm install -g typescript'
+=> en installant TS => accès au compilateur JS.
+
+=> génération tsconfig => 'tsc --init'
+=> tsconfig.json :
+{
+    "compilerOptions": {
+        "target": "es5",    => spécifie la version cible ECMAScript lors de compilation de code TS => es prends en charge ts les nav
+        "module": "commonjs",  => définit module du code compilé => CommonJS, ES2015, ES2020 etc ..
+        "outDir": "public/js"  => spécifie répertoire de sortie du code compilé en JS
+        "rootDir": "src",  => définit emplacement où se trouvent fichiers TS qui doivent être compilés
+        "strict": true,
+        "esModuleInterop": true
+        "forceConsistentCasingInFileNames": true
+    },
+    "include": ["src"]  => aide à définir quel répertoire doit être complié => si pas définit cette valeur -> compilateur va compiler touuus les fichiers .ts même si rep de sorti défini;
+}
+
+
+
+////////////////INTERFACES ET ALIAS DE TYPE/////////////////
+=> aident à définir forme d'une structure de données d'un objet;
+
+*Consensus dev => utilisation d'interface' chaque fois qu'on peut car 'interface' est dans l'ensemble des règles p/défaut 'tslint';
+
+EX: Création d'une interface et d'un type d'alias :
+interface ITest {
+  id: number;
+  name?: string;
+}
+
+type TestType = {
+  id: number,
+  name?: string,     => '?' = champs facultatif
+}
+
+function myTest(args: ITest): string {
+  if (args.name) {
+    return `Hello ${args.name}`
+  }
+  return "Hello Word"
+}
+
+myTest({ id: 1 })
+
+
+
+////////////////CREATION APPLI POKEDEX/////////////////
+
+**********ETAPE 1**********
+/*****Balisage*****/
+
+Création 'index.html', 'public/style.css', 'src/app.ts'
+
+*Index.html:
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="stylesheet" href="public/style.css" />
+      <title>TypeScript Pokedex</title>
+</head>
+<body>
+      <main>
+            <h1>Typed Pokedex</h1>
+            <div id="app"></div>
+      </main>
+      <script src="public/js/app.js"></script>
+</body>
+</html>
+
+
+
+**********ETAPE 2**********
+/*****Récupération et affichage des données en ts*****/
+
+*Dans app.ts:
+// | => type d'union => permet d'avoir types alternatifs
+// si container n'est pas type HTMLElement -> TS va vérifier si valeur = type any ici etc ...
+const container: HTMLElement | any=document.getElementById("app")
+const pokemons: number = 100
+
+//Interface qui définit forme d'un objet pokemon -> sera utilisé dans fonction chargée d'affiché contenu
+interface IPokemon{
+      id: number;
+      name: string;
+      image: string;
+      type: string;
+}
+
+//Fonction fetchData permet de parcourir nombre de pokemon à récupérer
+//Pour chaque objet=> appel à getPokemon avec le numéro du pokemon
+const fetchData = ():void => {
+      for (let i=1; i<= pokemons; i++){
+            getPokemon(i)
+      }
+}
+
+//Récupération des données peut prendre du temps -> fonction asynchrone qui retourne une Promise de type void
+//void = fonction ne retournera pas de valeur
+const getPokemon = async (id:number): Promise<void> =>{
+      const data: Response = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
+      const pokemon: any = await data.json()
+      const pokemonType: string = pokemon.types
+            .map((poke: any) => poke.type.name)
+            .join(", ")
+
+      //Une fois données récupérées -> création nouvel objet 'transformedPokemon' => reflète l'interface IPokemon
+      const transformedPokemon = {
+            id: pokemon.id,
+            name: pokemon.name,
+            image: `${pokemon.sprites.front_default}`,
+            type: pokemonType
+      }
+
+      showPokemon(transformedPokemon)
+}
+
+//Fonction qui reçoit en param l'objet pokemon de type IPokemon et ne retourne aucune valeur
+const showPokemon = (pokemon: IPokemon): void => {
+      //Ajoutera simplement contenu html au fichier à l'aide de  l'id container <div id="container>
+      let output: string = `
+            <div class="card">
+            <span class="card--id">#${pokemon.id}</span>
+            <img class="card--image" src=${pokemon.image} alt=${pokemon.name} />
+            <h1 class="card--name">${pokemon.name}</h1>
+            <span class="card--details">${pokemon.type}</span>
+        </div>
+      `
+      container.innerHTML += output
+}
+
+fetchData()
+
+
+
+**********ETAPE 3**********
+/*****Compilation TS en JS*****/
+
+'tsc' => compilera tous les fichiers .ts => vu le tsconfig.json -> compilera ici uniquement les fichiers ts situées dans 'src' et mettra code JS dans 'public'
+
+lancer fichier index.html;
+ça maaaarche :D
+
+Source projet complet:
+https://github.com/ibrahima92/pokedex-typescript
